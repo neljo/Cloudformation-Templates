@@ -1,0 +1,426 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters" : {
+    "VPCName" : {
+	    "Type" : "String",
+	    "Default" : "SG-VPC",
+	    "Description" : "Custom name to tag the newly createad VPC"
+	},
+	"Environment" : {
+		"Type" : "String",
+		"Default" : "staging",
+		"AllowedValues" : ["staging", "prod"],
+		"Description" : "The SDLC environment applicable to this stack."
+	},
+	"KeyPairName" : {
+		"Type": "AWS::EC2::KeyPair::KeyName",
+		"Default" : "mumbai",
+	    "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instance"
+	},
+	"BaseCIDRBlock" : {
+		"Type" : "String",
+		"MinLength": "5",
+		"MaxLength": "7",
+		"Default" : "10.190",
+		"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})",
+		"Description" : "First two octets for the IP Address range for this VPC"
+			}
+	},
+  "Resources": {
+    "SGVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "0.0/16"]]
+		},
+        "InstanceTenancy": "default",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SG-VPC"
+          }
+        ]
+      }
+    },
+    "PVTSUBNET1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "0.0/19"]]
+		},
+        "AvailabilityZone": "ap-south-1a",
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PVTSUBNET1"
+          }
+        ]
+      }
+    },
+    "PUBSUBNET2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "160.0/19"]]
+		},
+        "AvailabilityZone": "ap-south-1b",
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PUBSUBNET2"
+          }
+        ]
+      }
+    },
+    "PUBSUBNET1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "128.0/19"]]
+		},
+        "AvailabilityZone": "ap-south-1a",
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PUBSUBNET1"
+          }
+        ]
+      }
+    },
+    "PVTSUBNET4": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "96.0/19"]]
+		},
+        "AvailabilityZone": "ap-south-1b",
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PVTSUBNET4"
+          }
+        ]
+      }
+    },
+    "PVTSUBNET3": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "64.0/19"]]
+		},
+        "AvailabilityZone": "ap-south-1a",
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PVTSUBNET3"
+          }
+        ]
+      }
+    },
+    "PVTSUBNET2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": {
+		"Fn::Join" : [ ".", [{"Ref" : "BaseCIDRBlock"}, "32.0/19"]]
+		},
+        "AvailabilityZone": "ap-south-1b",
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PVTSUBNET2"
+          }
+        ]
+      }
+    },
+    "SGIGW": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SG-IGW"
+          }
+        ]
+      }
+    },
+    "SGDHCP": {
+      "Type": "AWS::EC2::DHCPOptions",
+      "Properties": {
+        "DomainName": "ap-south-1.compute.internal",
+        "DomainNameServers": [
+          "AmazonProvidedDNS"
+        ]
+      }
+    },
+    "SGNACL": {
+      "Type": "AWS::EC2::NetworkAcl",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SGVPC"
+        }
+      }
+    },
+    "SGPVTROUTE": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SGPVTROUTE"
+          }
+        ]
+      }
+    },
+    "SGPUBROUTE": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SGPUBROUTE"
+          }
+        ]
+      }
+    },
+    "NATGATEWAY" : {
+      "DependsOn" : "gw1",
+      "Type" : "AWS::EC2::NatGateway",
+      "Properties" : {
+        "AllocationId" : { "Fn::GetAtt" : ["EIP", "AllocationId"]},
+        "SubnetId" : { "Ref" : "PUBSUBNET1"},
+        "Tags" : [ {"Key" : "Name", "Value" : "SGNAT" } ]
+      }
+    },
+    "EIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+      "Domain" : "SGVPC"
+      }
+    },
+    "acl1": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "CidrBlock": "0.0.0.0/0",
+        "Egress": "true",
+        "Protocol": "-1",
+        "RuleAction": "allow",
+        "RuleNumber": "100",
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        }
+      }
+    },
+    "acl2": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "CidrBlock": "0.0.0.0/0",
+        "Protocol": "-1",
+        "RuleAction": "allow",
+        "RuleNumber": "100",
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        }
+      }
+    },
+    "subnetacl1": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        },
+        "SubnetId": {
+          "Ref": "PUBSUBNET1"
+        }
+      }
+    },
+    "subnetacl2": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET2"
+        }
+      }
+    },
+    "subnetacl3": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        },
+        "SubnetId": {
+          "Ref": "PUBSUBNET2"
+        }
+      }
+    },
+    "subnetacl4": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET3"
+        }
+      }
+    },
+    "subnetacl5": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET4"
+        }
+      }
+    },
+    "subnetacl6": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "SGNACL"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET1"
+        }
+      }
+    },
+    "gw1": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "InternetGatewayId": {
+          "Ref": "SGIGW"
+        }
+      }
+    },
+    "subnetroute2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SGPUBROUTE"
+        },
+        "SubnetId": {
+          "Ref": "PUBSUBNET1"
+        }
+      }
+    },
+    "subnetroute3": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SGPUBROUTE"
+        },
+        "SubnetId": {
+          "Ref": "PUBSUBNET2"
+        }
+      }
+    },
+	"subnetroute4": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SGPVTROUTE"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET1"
+        }
+      }
+    },
+	"subnetroute5": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SGPVTROUTE"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET2"
+        }
+      }
+    },
+	"subnetroute6": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SGPVTROUTE"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET3"
+        }
+      }
+    },
+	"subnetroute7": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SGPVTROUTE"
+        },
+        "SubnetId": {
+          "Ref": "PVTSUBNET4"
+        }
+      }
+    },
+	"route1" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "SGPVTROUTE" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "NatGatewayId" : { "Ref" : "NATGATEWAY" }
+       }
+    },
+    "route2": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "RouteTableId": { "Ref": "SGPUBROUTE" },
+        "GatewayId": {
+          "Ref": "SGIGW"
+        }
+      },
+      "DependsOn": "gw1"
+    },
+    "dchpassoc1": {
+      "Type": "AWS::EC2::VPCDHCPOptionsAssociation",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SGVPC"
+        },
+        "DhcpOptionsId": {
+          "Ref": "SGDHCP"
+        }
+      }
+    }
+  },
+  "Description": "NJ Template"
+}
